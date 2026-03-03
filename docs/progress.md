@@ -27,16 +27,16 @@
 - [x] Active sprint screen with day indicator
 
 ## Phase 5 — Daily Flow (Offline-First)
-- [ ] Daily check UI (binary toggle, numeric input)
-- [ ] MMKV write-first for daily checks
-- [ ] Daily one-line entry UI
-- [ ] MMKV write-first for daily entries
-- [ ] Background sync to Supabase (push unsynced, reconcile)
+- [x] Daily check UI (binary toggle, numeric input)
+- [x] MMKV write-first for daily checks
+- [x] Daily one-line entry UI
+- [x] MMKV write-first for daily entries
+- [x] Background sync to Supabase (push unsynced, reconcile)
 
 ## Phase 6 — Streaks & History
-- [ ] Daily streak calculation (simple text display)
-- [ ] Sprint streak (completed sprint count)
-- [ ] Sprint history list (last 3 for FREE)
+- [x] Daily streak calculation (simple text display)
+- [x] Sprint streak (completed sprint count)
+- [x] Sprint history list (last 3 for FREE)
 
 ## Phase 7 — AI Integration (POST-MVP)
 - [ ] LLM Gateway service scaffold

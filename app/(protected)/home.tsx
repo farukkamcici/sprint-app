@@ -56,6 +56,14 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {/* History link */}
+      <Pressable
+        style={({ pressed }) => [styles.historyButton, pressed && { opacity: 0.8 }]}
+        onPress={() => router.push('/(protected)/history')}
+      >
+        <Text style={styles.historyText}>Streaks & History</Text>
+      </Pressable>
+
       <Pressable
         style={({ pressed }) => [
           styles.signOutButton,
@@ -156,5 +164,19 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 14,
     color: '#dc2626',
+  },
+  historyButton: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  historyText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
   },
 });

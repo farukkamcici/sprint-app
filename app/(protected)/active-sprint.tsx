@@ -160,6 +160,25 @@ export default function ActiveSprintScreen() {
         </Pressable>
       ) : null}
 
+      {/* Daily Actions */}
+      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Today</Text>
+      <View style={styles.dailyActions}>
+        <Pressable
+          style={({ pressed }) => [styles.dailyButton, pressed && { opacity: 0.8 }]}
+          onPress={() => router.push('/(protected)/daily-check')}
+        >
+          <Text style={styles.dailyButtonText}>Daily Check</Text>
+          <Text style={styles.dailyButtonSub}>Track your rules</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.dailyButton, pressed && { opacity: 0.8 }]}
+          onPress={() => router.push('/(protected)/daily-entry')}
+        >
+          <Text style={styles.dailyButtonText}>Daily Entry</Text>
+          <Text style={styles.dailyButtonSub}>One line about your day</Text>
+        </Pressable>
+      </View>
+
       {/* Actions */}
       <View style={styles.actions}>
         {isLastDay ? (
@@ -328,5 +347,26 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 16,
     fontWeight: '500',
+  },
+  dailyActions: {
+    gap: 12,
+    marginBottom: 8,
+  },
+  dailyButton: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  dailyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  dailyButtonSub: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
   },
 });

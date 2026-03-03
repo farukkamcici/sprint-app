@@ -1,10 +1,12 @@
 import { useAuthListener } from '@/hooks/use-auth-listener';
+import { useBackgroundSync } from '@/hooks/use-background-sync';
 import { QueryProvider } from '@/lib/query-client';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   useAuthListener();
+  useBackgroundSync();
   return <>{children}</>;
 }
 
