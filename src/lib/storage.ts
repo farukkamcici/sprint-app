@@ -1,8 +1,84 @@
-import { MMKV } from 'react-native-mmkv';
+import { Platform } from 'react-native';
 
-export const storage = new MMKV({
-  id: 'sprint-app-storage',
-});
+/**
+ * Storage abstraction.
+ * Uses MMKV on native, falls back to in-memory + localStorage on web.
+ */
+let storage: {
+  getString: (key: string) => string | undefined;
+  set: (key: string, value: string | number | boolean) => void;
+  getNumber: (key: string) => number | undefined;
+  getBoolean: (key: string) => boolean | undefined;
+  delete: (key: string) => void;
+  contains: (key: string) => boolean;
+  getAllKeys: () => string[];
+  clearAll: () => void;
+};
+
+if (Platform.OS === 'web') {
+  // Web fallback using localStorage
+  storage = {
+    getString: (key) => {
+      try {
+        return localStorage.getItem(key) ?? undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    set: (key, value) => {
+      try {
+        localStorage.setItem(key, String(value));
+      } catch {
+        // ignore
+      }
+    },
+    getNumber: (key) => {
+      const val = localStorage.getItem(key);
+      if (val === null) return undefined;
+      const num = Number(val);
+      return isNaN(num) ? undefined : num;
+    },
+    getBoolean: (key) => {
+      const val = localStorage.getItem(key);
+      if (val === null) return undefined;
+      return val === 'true';
+    },
+    delete: (key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // ignore
+      }
+    },
+    contains: (key) => {
+      try {
+        return localStorage.getItem(key) !== null;
+      } catch {
+        return false;
+      }
+    },
+    getAllKeys: () => {
+      try {
+        return Object.keys(localStorage);
+      } catch {
+        return [];
+      }
+    },
+    clearAll: () => {
+      try {
+        localStorage.clear();
+      } catch {
+        // ignore
+      }
+    },
+  };
+} else {
+  // Native: use MMKV
+  const { MMKV } = require('react-native-mmkv');
+  storage = new MMKV({ id: 'sprint-app-storage' });
+}
+
+export { storage };
 
 /**
  * Type-safe MMKV helpers for offline-first data.
