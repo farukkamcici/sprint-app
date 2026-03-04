@@ -12,6 +12,7 @@ import { storage } from '@/lib/storage';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTheme } from '@/theme';
 import { useRouter } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 export default function ProfileScreen() {
@@ -96,7 +97,7 @@ export default function ProfileScreen() {
               Past sprints and streaks
             </Text>
           </View>
-          <Text variant="bodyMedium" color={colors.textMuted}>→</Text>
+          <ChevronRight size={18} color={colors.textMuted} />
         </Pressable>
       </View>
 

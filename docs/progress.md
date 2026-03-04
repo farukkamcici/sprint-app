@@ -51,7 +51,11 @@
 - [x] Settings (⚙) and note (✎) buttons moved into each sprint tile header — clearly belongs to that sprint
 - [x] Daily note redesigned as inline NoteRow at bottom of rules — time-sensitive: amber highlight after 18:00 with "How was today?" prompt
 
-- [] 
+- [x] Lucide React Native icons — all emoji icons replaced (Pencil, SettingsIcon, X, ArrowRight, Plus, ChevronRight)
+- [x] Sprint carousel now shows a tab bar at top with sprint titles — much more discoverable than bottom dots
+- []
+- []
+- []
 
 
 ## Phase 7 — AI Integration (POST-MVP)

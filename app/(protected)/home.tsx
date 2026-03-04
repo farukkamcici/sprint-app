@@ -31,6 +31,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useTheme } from '@/theme';
 import type { Database } from '@/types/database';
 import { useRouter } from 'expo-router';
+import { ArrowRight, Pencil, Plus, Settings as SettingsIcon, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     Dimensions,
@@ -79,9 +80,8 @@ export default function HomeScreen() {
                 pressed && { opacity: 0.5 },
               ]}
             >
-              <Text variant="small" color={colors.textMuted}>
-                + Sprint
-              </Text>
+              <Plus size={11} color={colors.textMuted} />
+              <Text variant="small" color={colors.textMuted}>Sprint</Text>
             </Pressable>
           ) : null}
           <Pressable
@@ -154,8 +154,17 @@ function SprintCarousel({ sprints }: { sprints: SprintRow[] }) {
     );
   }
 
+  const jumpToIndex = useCallback(
+    (i: number) => {
+      flatListRef.current?.scrollToIndex({ index: i + 1, animated: true });
+      setRealIndex(i);
+    },
+    [],
+  );
+
   return (
     <View style={{ flex: 1 }}>
+      <SprintTabBar sprints={sprints} activeIndex={realIndex} onTabPress={jumpToIndex} />
       <FlatList
         ref={flatListRef}
         data={loopData}
@@ -178,21 +187,56 @@ function SprintCarousel({ sprints }: { sprints: SprintRow[] }) {
         decelerationRate="fast"
         style={{ flex: 1 }}
       />
-      {/* Pagination dots */}
-      <View style={styles.dotsRow}>
-        {sprints.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              {
-                backgroundColor: i === realIndex ? colors.primary : colors.border,
-                width: i === realIndex ? 18 : 6,
-              },
+    </View>
+  );
+}
+
+// ─── Sprint Tab Bar ───────────────────────────────
+
+function SprintTabBar({
+  sprints,
+  activeIndex,
+  onTabPress,
+}: {
+  sprints: SprintRow[];
+  activeIndex: number;
+  onTabPress: (i: number) => void;
+}) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+
+  return (
+    <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+      {sprints.map((sprint, i) => {
+        const isActive = i === activeIndex;
+        const label = sprint.title
+          ? sprint.title.length > 14
+            ? sprint.title.slice(0, 13) + '…'
+            : sprint.title
+          : `Sprint ${i + 1}`;
+        return (
+          <Pressable
+            key={sprint.id}
+            style={({ pressed }) => [
+              styles.tab,
+              isActive && { borderBottomWidth: 2, borderBottomColor: colors.primary },
+              pressed && { opacity: 0.6 },
             ]}
-          />
-        ))}
-      </View>
+            onPress={() => onTabPress(i)}
+          >
+            <Text
+              variant="label"
+              style={{
+                color: isActive ? colors.text : colors.textMuted,
+                letterSpacing: 1,
+                fontSize: 10,
+              }}
+            >
+              {label.toUpperCase()}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -348,14 +392,14 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
             hitSlop={12}
             style={({ pressed }) => [styles.tileIconBtn, pressed && { opacity: 0.5 }]}
           >
-            <Text variant="body" color={colors.textMuted}>✎</Text>
+            <Pencil size={16} color={colors.textMuted} />
           </Pressable>
           <Pressable
             onPress={() => setShowSettings(true)}
             hitSlop={12}
             style={({ pressed }) => [styles.tileIconBtn, pressed && { opacity: 0.5 }]}
           >
-            <Text variant="body" color={colors.textMuted}>⚙</Text>
+            <SettingsIcon size={16} color={colors.textMuted} />
           </Pressable>
         </View>
       </View>
@@ -395,12 +439,15 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
           ]}
         >
           <Text variant="small" color={colors.warning} style={{ flex: 1 }}>
-            Day 1 — add, drop or adjust rules. Tap ⚙ to manage.
+            Day 1 — add, drop or adjust rules before locking.
           </Text>
-          <Pressable onPress={handleLockRules} hitSlop={8}>
-            <Text variant="smallMedium" color={colors.warning} style={styles.lockLink}>
-              Lock →
-            </Text>
+          <Pressable
+            onPress={handleLockRules}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            <Text variant="smallMedium" color={colors.warning}>Lock</Text>
+            <ArrowRight size={12} color={colors.warning} />
           </Pressable>
         </View>
       ) : null}
@@ -442,7 +489,7 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
           })
         ) : (
           <Text variant="body" color={colors.textMuted} style={{ opacity: 0.5 }}>
-            No rules yet. Tap ⚙ to add rules.
+            No rules yet. Open settings to add rules.
           </Text>
         )}
 
@@ -555,12 +602,7 @@ function NoteRow({
           </Text>
         )}
       </View>
-      <Text
-        variant="caption"
-        color={showEveningGlow ? colors.warning : colors.textMuted}
-      >
-        ✎
-      </Text>
+      <Pencil size={14} color={showEveningGlow ? colors.warning : colors.textMuted} />
     </Pressable>
   );
 }
@@ -784,7 +826,7 @@ function DailyNoteModal({
               hitSlop={12}
               style={({ pressed }) => pressed && { opacity: 0.5 }}
             >
-              <Text variant="body" color={colors.textMuted}>✕</Text>
+              <X size={18} color={colors.textMuted} />
             </Pressable>
           </View>
           <View
@@ -904,18 +946,22 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
   },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  // Carousel
-  dotsRow: {
+  // Carousel tab bar
+  tabBar: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    paddingBottom: 16,
-    paddingTop: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  dot: { height: 6, borderRadius: 3 },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
   // Tile
   tileScroll: { flex: 1 },
   tileContent: { paddingHorizontal: 20 },
