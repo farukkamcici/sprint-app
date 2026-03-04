@@ -20,13 +20,12 @@ export default function ProtectedLayout() {
       <Tabs.Screen name="ai" />
       <Tabs.Screen name="profile" />
 
-      {/* Push screens — hidden from tab bar */}
-      <Tabs.Screen name="create-sprint"  options={{ href: null }} />
-      <Tabs.Screen name="add-rule"        options={{ href: null }} />
-      <Tabs.Screen name="active-sprint"  options={{ href: null }} />
-      <Tabs.Screen name="daily-check"    options={{ href: null }} />
-      <Tabs.Screen name="daily-entry"    options={{ href: null }} />
-      <Tabs.Screen name="history"        options={{ href: null }} />
+      {/* Push screens — hidden from tab bar, lazy to avoid Fabric view bloat */}
+      <Tabs.Screen name="create-sprint"  options={{ href: null, lazy: true, unmountOnBlur: true }} />
+      <Tabs.Screen name="add-rule"        options={{ href: null, lazy: true, unmountOnBlur: true }} />
+      <Tabs.Screen name="daily-check"    options={{ href: null, lazy: true, unmountOnBlur: true }} />
+      <Tabs.Screen name="daily-entry"    options={{ href: null, lazy: true, unmountOnBlur: true }} />
+      <Tabs.Screen name="history"        options={{ href: null, lazy: true, unmountOnBlur: true }} />
     </Tabs>
   );
 }

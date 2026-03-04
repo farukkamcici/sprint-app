@@ -40,9 +40,11 @@ export function AlertDialog({ visible, title, message, buttons }: AlertDialogPro
   const { theme } = useTheme();
   const colors = theme.colors;
 
+  if (!visible) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="fade"
       statusBarTranslucent

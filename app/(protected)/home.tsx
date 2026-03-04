@@ -690,6 +690,8 @@ function SettingsModal({
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
+  if (!visible) return null;
+
   const rows = [
     {
       label: 'Add Rule',
@@ -723,7 +725,7 @@ function SettingsModal({
 
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="slide"
       onRequestClose={onClose}
@@ -801,6 +803,20 @@ function DailyNoteModal({
   sprintId: string;
   dayNumber: number;
 }) {
+  if (!visible) return null;
+
+  return <DailyNoteModalInner onClose={onClose} sprintId={sprintId} dayNumber={dayNumber} />;
+}
+
+function DailyNoteModalInner({
+  onClose,
+  sprintId,
+  dayNumber,
+}: {
+  onClose: () => void;
+  sprintId: string;
+  dayNumber: number;
+}) {
   const user = useAuthStore((s) => s.user);
   const { data: existingEntry } = useDailyEntry(sprintId, dayNumber);
   const saveEntryMutation = useSaveEntry(sprintId);
@@ -810,7 +826,7 @@ function DailyNoteModal({
   const inputRef = useRef<TextInput>(null);
   const today = getTodayDate();
 
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(existingEntry?.content ?? '');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   React.useEffect(() => {
@@ -820,10 +836,8 @@ function DailyNoteModal({
   }, [existingEntry]);
 
   React.useEffect(() => {
-    if (visible) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-    }
-  }, [visible]);
+    setTimeout(() => inputRef.current?.focus(), 200);
+  }, []);
 
   React.useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e: { endCoordinates: { height: number } }) => {
@@ -857,7 +871,7 @@ function DailyNoteModal({
 
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="slide"
       onRequestClose={onClose}
