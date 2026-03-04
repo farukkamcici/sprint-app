@@ -1,11 +1,17 @@
 import { supabase } from '@/lib/supabase';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import type { AuthError } from '@supabase/supabase-js';
-import { Linking } from 'react-native';
 
 interface AuthResult {
   success: boolean;
   error: string | null;
 }
+
+// Configure once — call this early (e.g. in _layout.tsx or here at module load)
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  scopes: ['email', 'profile'],
+});
 
 export function formatError(error: AuthError | null): string | null {
   if (!error) return null;
@@ -22,31 +28,42 @@ export function formatError(error: AuthError | null): string | null {
 }
 
 /**
- * Sign in with Google using Supabase OAuth (PKCE flow).
- * Opens the system browser → Google login → redirects back to sprint-app://google-auth?code=XXX
- * The google-auth.tsx route exchanges the code for a session.
+ * Sign in with Google — native account picker, no browser.
+ * Flow: GoogleSignin.signIn() → idToken → supabase.signInWithIdToken()
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
   try {
-    const redirectUri = 'sprint-app://google-auth';
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUri,
-        skipBrowserRedirect: true,
-      },
-    });
+    const response = await GoogleSignin.signIn();
 
-    if (error || !data.url) {
-      return { success: false, error: formatError(error) ?? 'Failed to start Google sign-in.' };
+    // New API: response.data contains the user info and tokens
+    const idToken = response.data?.idToken ?? (response as any).idToken ?? null;
+
+    if (!idToken) {
+      return { success: false, error: 'Google sign-in did not return a token.' };
     }
 
-    // Open system browser — google-auth.tsx handles the callback
-    await Linking.openURL(data.url);
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+
+    if (error) {
+      return { success: false, error: formatError(error) ?? 'Supabase sign-in failed.' };
+    }
 
     return { success: true, error: null };
   } catch (err: any) {
+    if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+      return { success: false, error: null }; // user cancelled — not an error
+    }
+    if (err.code === statusCodes.IN_PROGRESS) {
+      return { success: false, error: 'Sign-in already in progress.' };
+    }
+    if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      return { success: false, error: 'Google Play Services not available.' };
+    }
     return { success: false, error: err.message ?? 'An unexpected error occurred.' };
   }
 }
