@@ -53,9 +53,9 @@
 
 - [x] Lucide React Native icons — all emoji icons replaced (Pencil, SettingsIcon, X, ArrowRight, Plus, ChevronRight)
 - [x] Sprint carousel now shows a tab bar at top with sprint titles — much more discoverable than bottom dots
-- [] today's note kısmı klavyenin üstünde oluşuyor fakat üzerine dokunuca klavye yapanıyor ve titriyor aşağı iniyor baya glistch oluyor not input componenti, fixle onu
-- [] Font değiştir
-- []
+- [X] today's note kısmı klavyenin üstünde oluşuyor fakat üzerine dokunuca klavye yapanıyor ve titriyor aşağı iniyor baya glistch oluyor not input componenti, fixle onu
+- [X] Font değiştir
+- [] Light modedaki background fazla beyaz onu biraz soft ve cream yap
 
 
 ## Phase 7 — AI Integration (POST-MVP)

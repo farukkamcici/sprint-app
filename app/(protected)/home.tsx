@@ -31,19 +31,19 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useTheme } from '@/theme';
 import type { Database } from '@/types/database';
 import { useRouter } from 'expo-router';
-import { ArrowRight, Pencil, Plus, Settings as SettingsIcon, X } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { ArrowRight, ChevronLeft, ChevronRight, Pencil, Plus, Settings as SettingsIcon, X } from 'lucide-react-native';
+import React, { useCallback, useRef, useState } from 'react';
 import {
+    Animated,
     Dimensions,
     FlatList,
-    KeyboardAvoidingView,
+    Keyboard,
     Modal,
-    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
     TextInput,
-    View,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -68,30 +68,27 @@ export default function HomeScreen() {
     <View style={[styles.root, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
       {/* Global top bar */}
       <View style={styles.topBar}>
-        <View style={[styles.accentDot, { backgroundColor: colors.primary }]} />
-        <View style={styles.topBarRight}>
-          {!isLoading && activeSprints.length > 0 && activeSprints.length < 3 ? (
-            <Pressable
-              onPress={() => router.push('/(protected)/create-sprint')}
-              hitSlop={12}
-              style={({ pressed }) => [
-                styles.addBtn,
-                { borderColor: colors.border },
-                pressed && { opacity: 0.5 },
-              ]}
-            >
-              <Plus size={11} color={colors.textMuted} />
-              <Text variant="small" color={colors.textMuted}>Sprint</Text>
-            </Pressable>
-          ) : null}
+        <Pressable
+          onPress={() => router.push('/(protected)/profile')}
+          hitSlop={12}
+          style={({ pressed }) => pressed && { opacity: 0.7 }}
+        >
+          <Avatar name={displayName} size="sm" />
+        </Pressable>
+        {!isLoading && activeSprints.length > 0 && activeSprints.length < 3 ? (
           <Pressable
-            onPress={() => router.push('/(protected)/profile')}
+            onPress={() => router.push('/(protected)/create-sprint')}
             hitSlop={12}
-            style={({ pressed }) => pressed && { opacity: 0.7 }}
+            style={({ pressed }) => [
+              styles.addBtn,
+              { borderColor: colors.border },
+              pressed && { opacity: 0.5 },
+            ]}
           >
-            <Avatar name={displayName} size="sm" />
+            <Plus size={11} color={colors.textMuted} />
+            <Text variant="small" color={colors.textMuted}>Sprint</Text>
           </Pressable>
-        </View>
+        ) : null}
       </View>
 
       {/* Content */}
@@ -115,33 +112,23 @@ export default function HomeScreen() {
 function SprintCarousel({ sprints }: { sprints: SprintRow[] }) {
   const { theme } = useTheme();
   const colors = theme.colors;
-  const [realIndex, setRealIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<SprintRow>>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  // Wrap with sentinel items for infinite loop: [last, ...all, first]
-  const loopData = useMemo(() => {
-    if (sprints.length <= 1) return sprints;
-    return [sprints[sprints.length - 1], ...sprints, sprints[0]];
-  }, [sprints]);
+  const goTo = useCallback(
+    (i: number) => {
+      flatListRef.current?.scrollToIndex({ index: i, animated: true });
+      setActiveIndex(i);
+    },
+    [],
+  );
 
   const handleMomentumScrollEnd = useCallback(
     (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-      if (sprints.length <= 1) return;
       const x = e.nativeEvent.contentOffset.x;
-      const pageIndex = Math.round(x / SCREEN_WIDTH);
-      const n = sprints.length;
-
-      if (pageIndex === 0) {
-        // At before-first sentinel → jump to real last
-        flatListRef.current?.scrollToIndex({ index: n, animated: false });
-        setRealIndex(n - 1);
-      } else if (pageIndex === n + 1) {
-        // At after-last sentinel → jump to real first
-        flatListRef.current?.scrollToIndex({ index: 1, animated: false });
-        setRealIndex(0);
-      } else {
-        setRealIndex(pageIndex - 1);
-      }
+      const index = Math.round(x / SCREEN_WIDTH);
+      setActiveIndex(Math.max(0, Math.min(index, sprints.length - 1)));
     },
     [sprints.length],
   );
@@ -154,89 +141,144 @@ function SprintCarousel({ sprints }: { sprints: SprintRow[] }) {
     );
   }
 
-  const jumpToIndex = useCallback(
-    (i: number) => {
-      flatListRef.current?.scrollToIndex({ index: i + 1, animated: true });
-      setRealIndex(i);
-    },
-    [],
-  );
-
   return (
     <View style={{ flex: 1 }}>
-      <SprintTabBar sprints={sprints} activeIndex={realIndex} onTabPress={jumpToIndex} />
-      <FlatList
-        ref={flatListRef}
-        data={loopData}
+      <SprintDots
+        count={sprints.length}
+        activeIndex={activeIndex}
+        onDotPress={goTo}
+        hasPrev={activeIndex > 0}
+        hasNext={activeIndex < sprints.length - 1}
+        onPrev={() => goTo(activeIndex - 1)}
+        onNext={() => goTo(activeIndex + 1)}
+      />
+      <Animated.FlatList
+        ref={flatListRef as React.RefObject<FlatList<SprintRow>>}
+        data={sprints}
         horizontal
-        pagingEnabled
+        snapToInterval={SCREEN_WIDTH}
+        snapToAlignment="start"
+        decelerationRate={0.88}
         showsHorizontalScrollIndicator={false}
-        initialScrollIndex={1}
         getItemLayout={(_, i) => ({
           length: SCREEN_WIDTH,
           offset: SCREEN_WIDTH * i,
           index: i,
         })}
-        onMomentumScrollEnd={handleMomentumScrollEnd}
-        renderItem={({ item }) => (
-          <View style={{ width: SCREEN_WIDTH, flex: 1 }}>
-            <SprintTile sprint={item} />
-          </View>
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true },
         )}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        decelerationRate="fast"
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        renderItem={({ item, index }) => {
+          const inputRange = [
+            (index - 1) * SCREEN_WIDTH,
+            index * SCREEN_WIDTH,
+            (index + 1) * SCREEN_WIDTH,
+          ];
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.55, 1, 0.55],
+            extrapolate: 'clamp',
+          });
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.96, 1, 0.96],
+            extrapolate: 'clamp',
+          });
+          return (
+            <Animated.View
+              style={{
+                width: SCREEN_WIDTH,
+                flex: 1,
+                opacity,
+                transform: [{ scale }],
+              }}
+            >
+              <SprintTile sprint={item} />
+            </Animated.View>
+          );
+        }}
+        keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
       />
     </View>
   );
 }
 
-// ─── Sprint Tab Bar ───────────────────────────────
+// ─── Sprint Dots ──────────────────────────────────
 
-function SprintTabBar({
-  sprints,
+function SprintDots({
+  count,
   activeIndex,
-  onTabPress,
+  onDotPress,
+  hasPrev = false,
+  hasNext = false,
+  onPrev,
+  onNext,
 }: {
-  sprints: SprintRow[];
+  count: number;
   activeIndex: number;
-  onTabPress: (i: number) => void;
+  onDotPress: (i: number) => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
 }) {
   const { theme } = useTheme();
   const colors = theme.colors;
 
   return (
-    <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
-      {sprints.map((sprint, i) => {
-        const isActive = i === activeIndex;
-        const label = sprint.title
-          ? sprint.title.length > 14
-            ? sprint.title.slice(0, 13) + '…'
-            : sprint.title
-          : `Sprint ${i + 1}`;
-        return (
-          <Pressable
-            key={sprint.id}
-            style={({ pressed }) => [
-              styles.tab,
-              isActive && { borderBottomWidth: 2, borderBottomColor: colors.primary },
-              pressed && { opacity: 0.6 },
-            ]}
-            onPress={() => onTabPress(i)}
-          >
-            <Text
-              variant="label"
-              style={{
-                color: isActive ? colors.text : colors.textMuted,
-                letterSpacing: 1,
-                fontSize: 10,
-              }}
-            >
-              {label.toUpperCase()}
-            </Text>
-          </Pressable>
-        );
-      })}
+    <View style={styles.dotsRow}>
+      {/* Left arrow */}
+      <Pressable
+        onPress={onPrev}
+        hitSlop={12}
+        disabled={!hasPrev}
+        style={({ pressed }) => [
+          styles.dotsArrow,
+          !hasPrev && { opacity: 0 },
+          pressed && hasPrev && { opacity: 0.4 },
+        ]}
+      >
+        <ChevronLeft size={14} color={colors.textMuted} />
+      </Pressable>
+
+      {/* Dots */}
+      <View style={styles.dotsInner}>
+        {Array.from({ length: count }).map((_, i) => {
+          const isActive = i === activeIndex;
+          return (
+            <Pressable
+              key={i}
+              onPress={() => onDotPress(i)}
+              hitSlop={10}
+              style={({ pressed }) => [
+                styles.dot,
+                isActive
+                  ? { width: 20, backgroundColor: colors.primary }
+                  : { width: 6, backgroundColor: colors.border },
+                pressed && { opacity: 0.6 },
+              ]}
+            />
+          );
+        })}
+      </View>
+
+      {/* Right arrow */}
+      <Pressable
+        onPress={onNext}
+        hitSlop={12}
+        disabled={!hasNext}
+        style={({ pressed }) => [
+          styles.dotsArrow,
+          !hasNext && { opacity: 0 },
+          pressed && hasNext && { opacity: 0.4 },
+        ]}
+      >
+        <ChevronRight size={14} color={colors.textMuted} />
+      </Pressable>
     </View>
   );
 }
@@ -365,7 +407,7 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
       style={styles.tileScroll}
       contentContainerStyle={[
         styles.tileContent,
-        { paddingBottom: 48 },
+        { paddingBottom: 140 },
       ]}
       showsVerticalScrollIndicator={false}
     >
@@ -374,7 +416,7 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
         <View style={styles.tileHeaderLeft}>
           {sprint.title ? (
             <Text variant="label" color={colors.primary} style={styles.sprintLabel}>
-              {sprint.title.toUpperCase()}
+              {sprint.title}
             </Text>
           ) : (
             <Text variant="label" color={colors.textMuted} style={styles.sprintLabel}>
@@ -385,15 +427,8 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
             {formatDateShort(sprint.start_date)} — {formatDateShort(sprint.end_date)}
           </Text>
         </View>
-        {/* These buttons sit next to the sprint label — clearly belonging to this tile */}
+        {/* Only settings button in header — note is opened via NoteRow below */}
         <View style={styles.tileHeaderActions}>
-          <Pressable
-            onPress={() => setShowNote(true)}
-            hitSlop={12}
-            style={({ pressed }) => [styles.tileIconBtn, pressed && { opacity: 0.5 }]}
-          >
-            <Pencil size={16} color={colors.textMuted} />
-          </Pressable>
           <Pressable
             onPress={() => setShowSettings(true)}
             hitSlop={12}
@@ -404,30 +439,51 @@ function SprintTile({ sprint }: { sprint: SprintRow }) {
         </View>
       </View>
 
-      {/* Day number + progress bar */}
+      {/* Day number + progress */}
       <View style={styles.daySection}>
+        {/* Typography: big day hero + stacked meta */}
         <View style={styles.dayRow}>
-          <Text variant="display" style={[styles.dayNumber, { color: colors.text }]}>
+          <Text style={[styles.dayNumber, { color: colors.text }]}>
             {Math.min(dayNumber, sprint.duration_days)}
           </Text>
-          <Text variant="h3" color={colors.textMuted} style={styles.dayTotal}>
-            /{sprint.duration_days}
-          </Text>
-          <Text variant="small" color={colors.textMuted} style={styles.dayLabel}>
-            days
-          </Text>
+          <View style={styles.dayMeta}>
+            <Text style={[styles.dayOf, { color: colors.textMuted }]}>
+              /{sprint.duration_days}
+            </Text>
+            <Text style={[styles.dayMetaLabel, { color: colors.textMuted }]}>
+              {sprint.duration_days - dayNumber > 0
+                ? `${sprint.duration_days - dayNumber} days left`
+                : 'last day'}
+            </Text>
+          </View>
         </View>
-        <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: colors.primary,
-                width: `${progressFraction * 100}%`,
-              },
-            ]}
-          />
-        </View>
+
+        {/* Progress: segmented pills for ≤14 days, thick bar for longer */}
+        {sprint.duration_days <= 14 ? (
+          <View style={styles.segmentRow}>
+            {Array.from({ length: sprint.duration_days }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.segment,
+                  {
+                    backgroundColor: i < dayNumber ? colors.primary : colors.border,
+                    opacity: i < dayNumber ? 1 : 0.3,
+                  },
+                ]}
+              />
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+            <View
+              style={[
+                styles.progressFill,
+                { backgroundColor: colors.primary, width: `${progressFraction * 100}%` },
+              ]}
+            />
+          </View>
+        )}
       </View>
 
       {/* Calibration banner */}
@@ -755,6 +811,7 @@ function DailyNoteModal({
   const today = getTodayDate();
 
   const [content, setContent] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   React.useEffect(() => {
     if (existingEntry?.content) {
@@ -767,6 +824,19 @@ function DailyNoteModal({
       setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [visible]);
+
+  React.useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e: { endCoordinates: { height: number } }) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const isSynced = existingEntry?.synced === true;
 
@@ -793,9 +863,14 @@ function DailyNoteModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={styles.sheetOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      {/* Backdrop */}
+      <Pressable style={styles.sheetOverlay} onPress={onClose} />
+      {/* Sheet — manually offset by keyboard height, no KAV needed */}
+      <View
+        style={[
+          styles.noteModalKav,
+          { bottom: keyboardHeight },
+        ]}
       >
         <View
           style={[
@@ -803,7 +878,7 @@ function DailyNoteModal({
             {
               backgroundColor: colors.bgCard,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom + 16,
+              paddingBottom: keyboardHeight > 0 ? 16 : insets.bottom + 16,
             },
           ]}
         >
@@ -878,7 +953,7 @@ function DailyNoteModal({
             </Pressable>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -892,7 +967,7 @@ function EmptyState() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.emptyState, { paddingBottom: insets.bottom + 24 }]}>
+    <View style={[styles.emptyState, { paddingBottom: insets.bottom + 130 }]}>
       <View style={styles.emptyContent}>
         <View style={[styles.emptySlash, { backgroundColor: colors.primary }]} />
         <Text
@@ -939,8 +1014,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     marginBottom: 20,
   },
-  accentDot: { width: 8, height: 8, borderRadius: 4 },
-  topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   addBtn: {
     borderWidth: 1,
     borderRadius: 20,
@@ -951,27 +1024,42 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  // Carousel tab bar
-  tabBar: {
+  // Pagination dots
+  dotsRow: {
     flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  tab: {
-    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 0,
+  },
+  dotsInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  dotsArrow: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
   },
   // Tile
   tileScroll: { flex: 1 },
-  tileContent: { paddingHorizontal: 20 },
+  tileContent: { paddingHorizontal: 24, paddingTop: 20 },
   tileHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 32,
   },
-  tileHeaderLeft: { flex: 1, gap: 4 },
+  tileHeaderLeft: { flex: 1, gap: 6 },
   tileHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -982,13 +1070,16 @@ const styles = StyleSheet.create({
   tileIconBtn: { width: 28, alignItems: 'center' },
   sprintLabel: { letterSpacing: 1.5 },
   // Day section
-  daySection: { marginBottom: 28 },
-  dayRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 14 },
-  dayNumber: { fontSize: 56, lineHeight: 60, letterSpacing: -2 },
-  dayTotal: { marginBottom: 8, opacity: 0.5 },
-  dayLabel: { marginBottom: 9, opacity: 0.4, marginLeft: 2 },
-  progressTrack: { height: 3, borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: 3, borderRadius: 2 },
+  daySection: { marginBottom: 36 },
+  dayRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginBottom: 20 },
+  dayNumber: { fontSize: 72, lineHeight: 76, letterSpacing: -3, fontWeight: '800', fontFamily: 'FunnelDisplay_800ExtraBold' },
+  dayMeta: { paddingBottom: 10, gap: 5 },
+  dayOf: { fontSize: 24, lineHeight: 26, fontWeight: '300', opacity: 0.45, fontFamily: 'FunnelDisplay_300Light' },
+  dayMetaLabel: { fontSize: 11, letterSpacing: 0.8, opacity: 0.4, textTransform: 'uppercase' as const, fontFamily: 'FunnelDisplay_500Medium' },
+  segmentRow: { flexDirection: 'row', gap: 4 },
+  segment: { flex: 1, height: 8, borderRadius: 4 },
+  progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: 8, borderRadius: 4 },
   // Banner
   calibrationBanner: {
     flexDirection: 'row',
@@ -1002,7 +1093,7 @@ const styles = StyleSheet.create({
   lockLink: { textDecorationLine: 'underline' },
   // Section
   section: { marginBottom: 28 },
-  sectionLabel: { letterSpacing: 2, marginBottom: 12 },
+  sectionLabel: { letterSpacing: 2, marginBottom: 16 },
   ruleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1035,6 +1126,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   // Note modal
+  noteModalKav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   noteSheet: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12, paddingHorizontal: 20 },
   noteHeader: {
     flexDirection: 'row',

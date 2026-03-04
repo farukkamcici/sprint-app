@@ -1,18 +1,26 @@
 /**
  * Sprint Design System — Typography
  *
- * Font: DM Sans — geometric, warm, premium.
- * Falls back to system font if not loaded.
+ * Font: Funnel Display — everywhere, all weights.
  */
 
 import { Platform, TextStyle } from 'react-native';
 
-// Font family mapping
+// Font family mapping — all Funnel Display
 export const fontFamily = {
-  regular: 'DMSans_400Regular',
-  medium: 'DMSans_500Medium',
-  semibold: 'DMSans_600SemiBold',
-  bold: 'DMSans_700Bold',
+  light:     'FunnelDisplay_300Light',
+  regular:   'FunnelDisplay_400Regular',
+  medium:    'FunnelDisplay_500Medium',
+  semibold:  'FunnelDisplay_600SemiBold',
+  bold:      'FunnelDisplay_700Bold',
+  extrabold: 'FunnelDisplay_800ExtraBold',
+  // aliases for backward compat
+  displayLight:     'FunnelDisplay_300Light',
+  displayRegular:   'FunnelDisplay_400Regular',
+  displayMedium:    'FunnelDisplay_500Medium',
+  displaySemibold:  'FunnelDisplay_600SemiBold',
+  displayBold:      'FunnelDisplay_700Bold',
+  displayExtraBold: 'FunnelDisplay_800ExtraBold',
 } as const;
 
 // Fallback for when fonts aren't loaded
@@ -30,13 +38,13 @@ export interface TypographyVariant {
   lineHeight: number;
 }
 
-// Typography scale
+// Typography scale — all Funnel Display
 export const typography = {
   // Display — hero numbers, splash
   display: {
     fontSize: 34,
-    fontFamily: fontFamily.bold,
-    fontWeight: '700' as const,
+    fontFamily: fontFamily.extrabold,
+    fontWeight: '800' as const,
     letterSpacing: -1.0,
     lineHeight: 40,
   },
@@ -62,8 +70,8 @@ export const typography = {
   // H3 — card titles, subsections
   h3: {
     fontSize: 18,
-    fontFamily: fontFamily.semibold,
-    fontWeight: '600' as const,
+    fontFamily: fontFamily.medium,
+    fontWeight: '500' as const,
     letterSpacing: 0,
     lineHeight: 24,
   },
@@ -131,14 +139,16 @@ export const typography = {
     lineHeight: 16,
   },
 
-  // Mono-style numbers (for day indicators, streaks)
+  // Mono-style numbers
   number: {
     fontSize: 40,
-    fontFamily: fontFamily.bold,
-    fontWeight: '700' as const,
+    fontFamily: fontFamily.extrabold,
+    fontWeight: '800' as const,
     letterSpacing: -1.5,
     lineHeight: 44,
   },
 } as const;
 
 export type TypographyScale = keyof typeof typography;
+
+

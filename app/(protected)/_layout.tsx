@@ -1,5 +1,6 @@
+import { FloatingTabBar } from '@/components/FloatingTabBar';
 import { useAuthStore } from '@/stores/auth-store';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 
 export default function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -9,5 +10,23 @@ export default function ProtectedLayout() {
     return <Redirect href="/(auth)/onboarding" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
+      {/* Visible tabs */}
+      <Tabs.Screen name="home" />
+      <Tabs.Screen name="ai" />
+      <Tabs.Screen name="profile" />
+
+      {/* Push screens — hidden from tab bar */}
+      <Tabs.Screen name="create-sprint"  options={{ href: null }} />
+      <Tabs.Screen name="add-rule"        options={{ href: null }} />
+      <Tabs.Screen name="active-sprint"  options={{ href: null }} />
+      <Tabs.Screen name="daily-check"    options={{ href: null }} />
+      <Tabs.Screen name="daily-entry"    options={{ href: null }} />
+      <Tabs.Screen name="history"        options={{ href: null }} />
+    </Tabs>
+  );
 }

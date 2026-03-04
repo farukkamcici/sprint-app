@@ -31,7 +31,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll contentStyle={{ paddingBottom: 120 }}>
       <Header title="Profile" />
 
       {/* Avatar & name */}

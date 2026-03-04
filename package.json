@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/funnel-display": "^0.4.1",
     "@expo/metro-config": "~55.0.9",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@supabase/supabase-js": "^2.49.1",

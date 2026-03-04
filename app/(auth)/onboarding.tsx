@@ -12,6 +12,7 @@
 import { Text } from '@/components/ui';
 import { signInWithGoogle } from '@/lib/auth';
 import { useTheme } from '@/theme';
+import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -62,11 +63,11 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
-  // useNativeDriver: true — only opacity + transform are used from this value
   const scrollX = useRef(new Animated.Value(0)).current;
   const { theme } = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -87,7 +88,9 @@ export default function OnboardingScreen() {
     setError(null);
     const result = await signInWithGoogle();
     setLoading(false);
-    if (!result.success && result.error) {
+    if (result.success) {
+      router.replace('/(protected)/home');
+    } else if (result.error) {
       setError(result.error);
     }
   };
