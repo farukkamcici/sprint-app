@@ -1,214 +1,167 @@
+/**
+ * History Screen
+ *
+ * Streaks and past sprints. Clean data presentation.
+ * Warm accent on streak numbers. Premium card list.
+ */
+
+import { Badge, Card, Header, Screen, Text } from '@/components/ui';
 import { useAllChecks } from '@/hooks/use-daily-queries';
 import { useAllSprints, useSprintHistory } from '@/hooks/use-history-queries';
 import { useSprintRules } from '@/hooks/use-rule-queries';
 import { useActiveSprint } from '@/hooks/use-sprint-queries';
 import { getSprintDayNumber } from '@/lib/sprint-service';
-import {
-    calculateDailyStreak,
-    calculateSprintStreak
-} from '@/lib/streak-service';
+import { calculateDailyStreak, calculateSprintStreak } from '@/lib/streak-service';
+import { useTheme } from '@/theme';
 import type { Database } from '@/types/database';
-import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 type Sprint = Database['public']['Tables']['sprints']['Row'];
 
 export default function HistoryScreen() {
-  const router = useRouter();
   const { data: activeSprint } = useActiveSprint();
   const { data: rules } = useSprintRules(activeSprint?.id);
   const { data: allChecks } = useAllChecks(activeSprint?.id);
   const { data: history, isLoading } = useSprintHistory(3);
   const { data: allSprints } = useAllSprints();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   const dailyStreak =
     activeSprint && allChecks && rules
-      ? calculateDailyStreak(
-          allChecks,
-          rules.length,
-          getSprintDayNumber(activeSprint),
-        )
+      ? calculateDailyStreak(allChecks, rules.length, getSprintDayNumber(activeSprint))
       : 0;
 
-  const sprintStreak = allSprints
-    ? calculateSprintStreak(allSprints)
-    : 0;
+  const sprintStreak = allSprints ? calculateSprintStreak(allSprints) : 0;
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      contentInsetAdjustmentBehavior="automatic"
-    >
-      <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back</Text>
-      </Pressable>
+    <Screen scroll>
+      <Header title="History" />
 
-      <Text style={styles.title}>Streaks & History</Text>
+      <Text variant="h1" style={styles.pageTitle}>Streaks & History</Text>
 
-      {/* Streak Cards */}
+      {/* Streak cards */}
       <View style={styles.streakRow}>
-        <View style={styles.streakCard}>
-          <Text style={styles.streakNumber}>{dailyStreak}</Text>
-          <Text style={styles.streakLabel}>Day Streak</Text>
-        </View>
-        <View style={styles.streakCard}>
-          <Text style={styles.streakNumber}>{sprintStreak}</Text>
-          <Text style={styles.streakLabel}>Sprint Streak</Text>
-        </View>
+        <Card
+          style={[styles.streakCard, { backgroundColor: colors.primaryMuted, borderWidth: 0 }]}
+        >
+          <Text variant="number" color={colors.primary}>
+            {dailyStreak}
+          </Text>
+          <Text variant="caption" color={colors.textSecondary}>
+            DAY STREAK
+          </Text>
+        </Card>
+
+        <Card
+          style={[styles.streakCard, { backgroundColor: colors.primaryMuted, borderWidth: 0 }]}
+        >
+          <Text variant="number" color={colors.primary}>
+            {sprintStreak}
+          </Text>
+          <Text variant="caption" color={colors.textSecondary}>
+            SPRINT STREAK
+          </Text>
+        </Card>
       </View>
 
-      {/* Sprint History */}
-      <Text style={styles.sectionTitle}>Past Sprints</Text>
+      {/* History section */}
+      <View style={styles.historySection}>
+        <Text variant="label" color={colors.textMuted} style={styles.sectionLabel}>
+          PAST SPRINTS
+        </Text>
 
-      {isLoading ? (
-        <Text style={styles.loadingText}>Loading...</Text>
-      ) : !history?.length ? (
-        <Text style={styles.emptyText}>No completed sprints yet.</Text>
-      ) : (
-        history.map((sprint) => (
-          <SprintHistoryCard key={sprint.id} sprint={sprint} />
-        ))
-      )}
+        {isLoading ? (
+          <Text variant="small" color={colors.textMuted}>Loading...</Text>
+        ) : !history?.length ? (
+          <Text variant="small" color={colors.textMuted} center style={styles.emptyText}>
+            No completed sprints yet.
+          </Text>
+        ) : (
+          <View style={styles.historyList}>
+            {history.map((sprint) => (
+              <SprintHistoryCard key={sprint.id} sprint={sprint} />
+            ))}
+          </View>
+        )}
 
-      <Text style={styles.freeNote}>
-        FREE tier shows last 3 sprints.
-      </Text>
-    </ScrollView>
+        <Text variant="caption" color={colors.textMuted} center style={styles.freeNote}>
+          FREE tier shows last 3 sprints.
+        </Text>
+      </View>
+    </Screen>
   );
 }
 
 function SprintHistoryCard({ sprint }: { sprint: Sprint }) {
-  const statusColor =
-    sprint.status === 'completed' ? '#166534' : '#dc2626';
-  const statusBg =
-    sprint.status === 'completed' ? '#f0fdf4' : '#fef2f2';
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   return (
-    <View style={styles.historyCard}>
+    <Card style={styles.historyCard}>
       <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>
+        <Text variant="bodyMedium" style={styles.historyTitle} numberOfLines={1}>
           {sprint.title ?? 'Untitled Sprint'}
         </Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-          <Text style={[styles.statusText, { color: statusColor }]}>
-            {sprint.status === 'completed' ? 'Completed' : 'Abandoned'}
-          </Text>
-        </View>
+        <Badge
+          label={sprint.status === 'completed' ? 'Completed' : 'Abandoned'}
+          variant={sprint.status === 'completed' ? 'success' : 'error'}
+        />
       </View>
-      <Text style={styles.historyDates}>
+      <Text variant="small" color={colors.textSecondary}>
         {sprint.start_date} → {sprint.end_date}
       </Text>
-      <Text style={styles.historyDuration}>
+      <Text variant="caption" color={colors.textMuted}>
         {sprint.duration_days} days
         {sprint.category ? ` · ${sprint.category}` : ''}
       </Text>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-    backgroundColor: '#fff',
-    flexGrow: 1,
-  },
-  backButton: {
-    marginBottom: 24,
-  },
-  backText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000',
+  pageTitle: {
     marginBottom: 24,
   },
   streakRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 32,
+    marginBottom: 36,
   },
   streakCard: {
     flex: 1,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingVertical: 20,
     alignItems: 'center',
+    paddingVertical: 24,
+    gap: 8,
   },
-  streakNumber: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#fff',
+  historySection: {
+    gap: 12,
   },
-  streakLabel: {
-    fontSize: 13,
-    color: '#aaa',
-    marginTop: 4,
-    fontWeight: '500',
+  sectionLabel: {
+    letterSpacing: 1,
+    marginBottom: 4,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 14,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#999',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginVertical: 20,
+  historyList: {
+    gap: 12,
   },
   historyCard: {
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    gap: 4,
   },
   historyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   historyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
     flex: 1,
+    marginRight: 8,
   },
-  statusBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  historyDates: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 2,
-  },
-  historyDuration: {
-    fontSize: 13,
-    color: '#aaa',
+  emptyText: {
+    marginVertical: 24,
   },
   freeNote: {
-    fontSize: 12,
-    color: '#bbb',
-    textAlign: 'center',
     marginTop: 16,
-    marginBottom: 8,
+    letterSpacing: 0.5,
   },
 });

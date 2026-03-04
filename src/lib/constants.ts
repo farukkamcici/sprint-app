@@ -17,4 +17,8 @@ export const STORAGE_KEYS = {
   // List of unsynced record IDs
   UNSYNCED_CHECKS: 'sync.unsynced_checks',
   UNSYNCED_ENTRIES: 'sync.unsynced_entries',
+
+  // Design system
+  THEME_MODE: 'app.theme_mode',
+  ONBOARDING_COMPLETE: 'app.onboarding_complete',
 } as const;

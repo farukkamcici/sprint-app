@@ -38,6 +38,22 @@
 - [x] Sprint streak (completed sprint count)
 - [x] Sprint history list (last 3 for FREE)
 
+## Phase 6.1 — Revisions
+- [x] Remove "abandon sprint" button from main screen — moved to ⚙ Settings modal
+- [x] Remove "one line" section from main screen — converted to ✎ note button → modal
+- [x] Remove "add rule" button from main screen — ⚙ Settings modal handles add/edit rules, lock, abandon, complete
+- [x] Create custom AlertDialog component — no device native Alert used
+- [x] Calibration banner text fixed — fits screen properly with flex layout
+- [x] Replace SprintArc radial bar with horizontal progress bar — Day X / Y + thin amber fill bar
+- [x] 2nd/3rd sprint flow — after abandon/complete, home resets to EmptyState with "Start a Sprint" + "View past sprints" buttons
+- [x] Up to 3 simultaneous active sprints — sprint-service limit raised from 1 → 3, getActiveSprints() added
+- [x] Swipeable looping sprint carousel on home — horizontal FlatList with [last, ...all, first] wrap + pagination dots
+- [x] Settings (⚙) and note (✎) buttons moved into each sprint tile header — clearly belongs to that sprint
+- [x] Daily note redesigned as inline NoteRow at bottom of rules — time-sensitive: amber highlight after 18:00 with "How was today?" prompt
+
+- [] 
+
+
 ## Phase 7 — AI Integration (POST-MVP)
 - [ ] LLM Gateway service scaffold
 - [ ] Gateway endpoints

@@ -1,18 +1,25 @@
+/**
+ * Create Sprint Screen
+ *
+ * Sprint creation flow: optional title, 1-3 rules.
+ * Clean card-based rule builder. Premium form UX.
+ */
+
+import {
+    Button,
+    Card,
+    Header,
+    Input,
+    Screen,
+    SegmentedControl,
+    Text,
+} from '@/components/ui';
 import { useAddRule } from '@/hooks/use-rule-queries';
 import { useCreateSprint } from '@/hooks/use-sprint-queries';
+import { useTheme } from '@/theme';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 interface RuleDraft {
   title: string;
@@ -20,12 +27,18 @@ interface RuleDraft {
   target_value: string;
 }
 
-const emptyRule = (): RuleDraft => ({ title: '', type: 'binary', target_value: '' });
+const emptyRule = (): RuleDraft => ({
+  title: '',
+  type: 'binary',
+  target_value: '',
+});
 
 export default function CreateSprintScreen() {
   const router = useRouter();
   const createSprint = useCreateSprint();
   const addRule = useAddRule();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   const [title, setTitle] = useState('');
   const [rules, setRules] = useState<RuleDraft[]>([emptyRule()]);
@@ -34,15 +47,11 @@ export default function CreateSprintScreen() {
   const canAddRule = rules.length < 3;
 
   const handleAddRule = () => {
-    if (canAddRule) {
-      setRules((prev) => [...prev, emptyRule()]);
-    }
+    if (canAddRule) setRules((prev) => [...prev, emptyRule()]);
   };
 
   const handleRemoveRule = (index: number) => {
-    if (rules.length > 1) {
-      setRules((prev) => prev.filter((_, i) => i !== index));
-    }
+    if (rules.length > 1) setRules((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateRule = (index: number, field: keyof RuleDraft, value: string) => {
@@ -67,14 +76,11 @@ export default function CreateSprintScreen() {
       Alert.alert('Error', 'Add at least one rule.');
       return;
     }
-
     setLoading(true);
     try {
       const sprint = await createSprint.mutateAsync({
         title: title.trim() || undefined,
       });
-
-      // Add rules sequentially
       for (const rule of validRules) {
         await addRule.mutateAsync({
           sprint_id: sprint.id,
@@ -86,7 +92,6 @@ export default function CreateSprintScreen() {
               : undefined,
         });
       }
-
       router.replace('/(protected)/home');
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create sprint.');
@@ -96,246 +101,141 @@ export default function CreateSprintScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding">
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-      >
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
+    <Screen scroll keyboard>
+      <Header title="New Sprint" />
 
-        <Text style={styles.heading}>New Sprint</Text>
-        <Text style={styles.subtext}>7 days. Max 3 rules.</Text>
+      <View style={styles.intro}>
+        <Text variant="h1">New Sprint</Text>
+        <Text variant="small" color={colors.textSecondary} style={styles.subtext}>
+          7 days. Max 3 rules. Lock in and execute.
+        </Text>
+      </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Sprint title (optional)"
-          placeholderTextColor="#999"
-          value={title}
-          onChangeText={setTitle}
-          editable={!loading}
-        />
+      <Input
+        label="SPRINT TITLE"
+        placeholder="Optional — e.g. Week of Focus"
+        value={title}
+        onChangeText={setTitle}
+        editable={!loading}
+      />
 
-        <Text style={styles.sectionTitle}>Rules</Text>
+      {/* Rules */}
+      <View style={styles.rulesSection}>
+        <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>
+          RULES
+        </Text>
 
         {rules.map((rule, index) => (
-          <View key={index} style={styles.ruleCard}>
+          <Card key={index} style={styles.ruleCard}>
             <View style={styles.ruleHeader}>
-              <Text style={styles.ruleLabel}>Rule {index + 1}</Text>
+              <Text variant="caption" color={colors.textMuted}>
+                RULE {index + 1}
+              </Text>
               {rules.length > 1 ? (
-                <Pressable onPress={() => handleRemoveRule(index)}>
-                  <Text style={styles.removeText}>Remove</Text>
+                <Pressable onPress={() => handleRemoveRule(index)} hitSlop={8}>
+                  <Text variant="smallMedium" color={colors.error}>
+                    Remove
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Rule title (e.g. Exercise)"
-              placeholderTextColor="#999"
+            <Input
+              placeholder="e.g. Exercise, Read, No social media"
               value={rule.title}
               onChangeText={(v) => updateRule(index, 'title', v)}
               editable={!loading}
             />
 
-            <View style={styles.typeRow}>
-              <Pressable
-                style={[styles.typeButton, rule.type === 'binary' && styles.typeActive]}
-                onPress={() => toggleRuleType(index)}
-                disabled={loading}
-              >
-                <Text
-                  style={[styles.typeText, rule.type === 'binary' && styles.typeTextActive]}
-                >
-                  Yes/No
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[styles.typeButton, rule.type === 'numeric' && styles.typeActive]}
-                onPress={() => toggleRuleType(index)}
-                disabled={loading}
-              >
-                <Text
-                  style={[styles.typeText, rule.type === 'numeric' && styles.typeTextActive]}
-                >
-                  Numeric
-                </Text>
-              </Pressable>
-            </View>
+            <SegmentedControl
+              options={['Yes / No', 'Numeric']}
+              selectedIndex={rule.type === 'binary' ? 0 : 1}
+              onSelect={() => toggleRuleType(index)}
+              disabled={loading}
+            />
 
             {rule.type === 'numeric' ? (
-              <TextInput
-                style={styles.input}
-                placeholder="Target value (e.g. 10000)"
-                placeholderTextColor="#999"
+              <Input
+                placeholder="Target value — e.g. 10000"
                 value={rule.target_value}
                 onChangeText={(v) => updateRule(index, 'target_value', v)}
                 keyboardType="number-pad"
                 editable={!loading}
+                containerStyle={styles.targetInput}
               />
             ) : null}
-          </View>
+          </Card>
         ))}
 
         {canAddRule ? (
           <Pressable
-            style={styles.addRuleButton}
+            style={[
+              styles.addRuleButton,
+              {
+                borderColor: colors.border,
+                borderRadius: theme.radius.md,
+              },
+            ]}
             onPress={handleAddRule}
             disabled={loading}
           >
-            <Text style={styles.addRuleText}>+ Add Rule</Text>
+            <Text variant="smallMedium" color={colors.textMuted}>
+              + Add Rule
+            </Text>
           </Pressable>
         ) : null}
+      </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.createButton,
-            pressed && styles.createButtonPressed,
-            loading && styles.createButtonDisabled,
-          ]}
+      {/* Submit */}
+      <View style={styles.submitSection}>
+        <Button
+          label="Start Sprint"
+          variant="primary"
+          size="lg"
+          loading={loading}
           onPress={handleCreate}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.createButtonText}>Start Sprint</Text>
-          )}
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scroll: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 24,
-  },
-  backText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  heading: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
+  intro: {
+    marginBottom: 28,
   },
   subtext: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 24,
+    marginTop: 6,
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#000',
-    backgroundColor: '#fafafa',
-    marginBottom: 12,
+  rulesSection: {
+    marginTop: 8,
+    gap: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-    marginTop: 16,
-    marginBottom: 12,
+  sectionLabel: {
+    letterSpacing: 1,
+    marginBottom: 4,
   },
   ruleCard: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: '#fafafa',
+    gap: 12,
   },
   ruleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  ruleLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  removeText: {
-    fontSize: 14,
-    color: '#dc2626',
-  },
-  typeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  typeButton: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  typeActive: {
-    borderColor: '#000',
-    backgroundColor: '#000',
-  },
-  typeText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  typeTextActive: {
-    color: '#fff',
-    fontWeight: '600',
+  targetInput: {
+    marginTop: 4,
+    marginBottom: 0,
   },
   addRuleButton: {
-    height: 44,
+    height: 48,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
   },
-  addRuleText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  createButton: {
-    height: 48,
-    backgroundColor: '#000',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  createButtonPressed: {
-    opacity: 0.8,
-  },
-  createButtonDisabled: {
-    opacity: 0.5,
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  submitSection: {
+    marginTop: 32,
+    paddingBottom: 8,
   },
 });

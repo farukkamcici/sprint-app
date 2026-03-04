@@ -1,26 +1,28 @@
+/**
+ * Daily Entry Screen
+ *
+ * One-line daily reflection. Immutable once synced.
+ * Clean text input. Minimal and intentional.
+ */
+
+import { Button, Card, Header, Screen, Text } from '@/components/ui';
 import { useDailyEntry, useSaveEntry } from '@/hooks/use-daily-queries';
 import { useActiveSprint } from '@/hooks/use-sprint-queries';
 import { getTodayDate } from '@/lib/daily-check-service';
 import { getSprintDayNumber } from '@/lib/sprint-service';
 import { syncAll } from '@/lib/sync-service';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTheme } from '@/theme';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
+import { Alert, StyleSheet, TextInput, View } from 'react-native';
 
 export default function DailyEntryScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { data: sprint } = useActiveSprint();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   const dayNumber = sprint ? getSprintDayNumber(sprint) : 0;
   const today = getTodayDate();
@@ -32,7 +34,6 @@ export default function DailyEntryScreen() {
   const [syncing, setSyncing] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize text from existing entry (only once)
   if (existingEntry && !initialized) {
     setContent(existingEntry.content);
     setInitialized(true);
@@ -46,29 +47,23 @@ export default function DailyEntryScreen() {
       Alert.alert('Empty', 'Write something before saving.');
       return;
     }
-
     if (isSynced) {
       Alert.alert('Locked', 'This entry has already been synced and cannot be edited.');
       return;
     }
-
     saveEntryMutation.mutate({
       user_id: user.id,
       day_number: dayNumber,
       date: today,
       content: content.trim(),
     });
-
-    // Background sync
     setSyncing(true);
     try {
       await syncAll();
-    } catch {
-      // Data safe in MMKV
-    } finally {
+    } catch {}
+    finally {
       setSyncing(false);
     }
-
     Alert.alert('Saved', 'Your daily entry has been recorded.', [
       { text: 'OK', onPress: () => router.back() },
     ]);
@@ -76,40 +71,57 @@ export default function DailyEntryScreen() {
 
   if (!sprint) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>No active sprint</Text>
-      </View>
+      <Screen>
+        <View style={styles.centered}>
+          <Text variant="h2" color={colors.textMuted}>No active sprint</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.container}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
+    <Screen keyboard>
+      <Header title="Daily Entry" />
 
-        <Text style={styles.title}>Daily Entry</Text>
-        <Text style={styles.subtitle}>
+      <View style={styles.header}>
+        <Text variant="h1">Daily Entry</Text>
+        <Text variant="small" color={colors.textSecondary} style={styles.subtitle}>
           Day {dayNumber} — {today}
         </Text>
+      </View>
 
-        {isSynced ? (
-          <View style={styles.syncedBanner}>
-            <Text style={styles.syncedText}>
-              This entry has been synced and is now immutable.
-            </Text>
-          </View>
-        ) : null}
+      {isSynced ? (
+        <Card
+          style={[styles.syncedCard, { backgroundColor: colors.successBg, borderWidth: 0 }]}
+        >
+          <Text variant="small" color={colors.success}>
+            This entry has been synced and is now immutable.
+          </Text>
+        </Card>
+      ) : null}
+
+      <View style={styles.entryContainer}>
+        <Text variant="label" color={colors.textMuted} style={styles.prompt}>
+          ONE LINE.
+        </Text>
 
         <TextInput
-          style={[styles.textArea, isSynced && styles.textAreaLocked]}
+          style={[
+            styles.textArea,
+            {
+              backgroundColor: colors.bgCard,
+              borderColor: colors.border,
+              borderRadius: theme.radius.lg,
+              color: colors.text,
+              fontFamily: theme.typography.body.fontFamily,
+              fontSize: theme.typography.body.fontSize,
+              lineHeight: theme.typography.body.lineHeight,
+            },
+            isSynced && { opacity: 0.6 },
+          ]}
           multiline
-          placeholder="One line about your day..."
-          placeholderTextColor="#bbb"
+          placeholder="What happened today..."
+          placeholderTextColor={colors.textMuted}
           value={content}
           onChangeText={setContent}
           editable={!isSynced}
@@ -117,114 +129,61 @@ export default function DailyEntryScreen() {
           textAlignVertical="top"
         />
 
-        <Text style={styles.charCount}>{content.length} / 280</Text>
-
-        {!isSynced ? (
-          <Pressable
-            style={({ pressed }) => [
-              styles.saveButton,
-              pressed && { opacity: 0.8 },
-              syncing && { opacity: 0.6 },
-            ]}
-            onPress={handleSave}
-            disabled={syncing}
-          >
-            <Text style={styles.saveText}>
-              {syncing ? 'Saving & Syncing...' : 'Save Entry'}
-            </Text>
-          </Pressable>
-        ) : null}
+        <Text variant="caption" color={colors.textMuted} style={styles.charCount}>
+          {content.length} / 280
+        </Text>
       </View>
-    </KeyboardAvoidingView>
+
+      {!isSynced ? (
+        <View style={styles.saveSection}>
+          <Button
+            label={syncing ? 'Saving & Syncing...' : 'Save Entry'}
+            variant="primary"
+            size="lg"
+            loading={syncing}
+            onPress={handleSave}
+          />
+        </View>
+      ) : null}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  emptyText: {
-    fontSize: 18,
-    color: '#ccc',
-    fontWeight: '600',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-    backgroundColor: '#fff',
-  },
-  backButton: {
+  header: {
     marginBottom: 24,
-  },
-  backText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
+    marginTop: 6,
   },
-  syncedBanner: {
-    backgroundColor: '#f0fdf4',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 16,
+  syncedCard: {
+    marginBottom: 20,
   },
-  syncedText: {
-    fontSize: 14,
-    color: '#166534',
+  entryContainer: {
+    flex: 1,
+  },
+  prompt: {
+    letterSpacing: 2,
+    marginBottom: 12,
   },
   textArea: {
-    height: 120,
+    height: 140,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
-    fontSize: 16,
-    color: '#000',
-    lineHeight: 22,
-    backgroundColor: '#fafafa',
-  },
-  textAreaLocked: {
-    backgroundColor: '#f5f5f5',
-    color: '#666',
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   charCount: {
-    fontSize: 12,
-    color: '#999',
     textAlign: 'right',
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: 8,
   },
-  saveButton: {
-    height: 52,
-    backgroundColor: '#000',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  saveText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
+  saveSection: {
+    marginTop: 24,
+    paddingBottom: 8,
   },
 });

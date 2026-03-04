@@ -112,12 +112,43 @@ The mobile app never contacts an LLM provider directly.
 
 Use these skills (in priority order) when generating or reviewing code:
 
-1. **vercel-react-native-skills** — RN + Expo patterns, performance, platform APIs
-2. **building-native-ui** — Expo Router layouts, styling, components, navigation
-3. **native-data-fetching** — TanStack Query, fetch, caching, offline, sync
-4. **vercel-react-best-practices** — React performance, composition, state
-5. **web-design-guidelines** — Accessibility, UX review, design audit
-6. **vercel-composition-patterns** — Component decomposition, scaling patterns
+1. **frontend-design** — Distinctive, non-generic UI. Bold aesthetic direction.
+2. **vercel-react-native-skills** — RN + Expo patterns, performance, platform APIs
+3. **building-native-ui** — Expo Router layouts, styling, components, navigation
+4. **native-data-fetching** — TanStack Query, fetch, caching, offline, sync
+5. **vercel-react-best-practices** — React performance, composition, state
+6. **web-design-guidelines** — Accessibility, UX review, design audit
+7. **vercel-composition-patterns** — Component decomposition, scaling patterns
+
+---
+
+## Design Identity
+
+Sprint's visual language is **warm precision** — a refined instrument, not a toy.
+Every screen must feel intentional, not generated. Follow these rules:
+
+### Signature Elements
+- **Amber accent bar/slash** — a 3px vertical amber bar appears before key content blocks (onboarding, login brand, empty states). This is THE brand mark in UI.
+- **SprintArc** — circular progress ring is the centerpiece of the active sprint view. Always animated.
+- **Amber dot** — small 8px circle used as a subtle brand presence in top bars.
+
+### Design Rules
+- **No generic layouts.** Every screen needs at least one distinctive composition choice. Avoid cookie-cutter card lists.
+- **Typography creates hierarchy.** Oversized display text for hero moments, paired with restrained body text. Never use uniform sizing.
+- **Dark mode is primary.** Light mode (coffee/cream/latte tones) is secondary.
+- **Warm neutrals only.** Stone family (#0C0A09 → #FAFAF9). No cold grays.
+- **Amber/caramel accent (#C4956A dark, #B07D4F light).** This is the brand color. Use intentionally — not everywhere, but at key moments.
+- **Animations are premium.** Fade-in on slide transitions, animated arc progress, presses scale down. Never jarring.
+- **Inline over navigation.** Prefer showing content inline (daily checks, entries) over pushing to separate screens.
+- **No email auth in MVP.** Google-only. Apple later. Email only if app stores require it.
+- **Logo placeholder.** The amber vertical bar + "Sprint" text serves as the logo until a proper one is designed.
+
+### Anti-Patterns (Never Do)
+- Generic card grids with no visual hierarchy
+- System font defaults (Inter, Roboto, Arial)
+- Purple gradients, neon colors, or cold-toned palettes
+- Gamification elements (badges, points, leaderboards)
+- Cluttered navigation with many tabs/buttons
 
 ---
 
@@ -130,3 +161,4 @@ Use these skills (in priority order) when generating or reviewing code:
 | docs/constraints.md    | All product and technical constraints  |
 | docs/data-model.md     | Database schema, RLS, indexes          |
 | docs/ai-contracts.md   | LLM Gateway API contracts and types    |
+| docs/design-system.md  | Design tokens, components, app flow    |

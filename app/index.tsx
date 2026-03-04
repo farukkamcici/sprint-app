@@ -1,15 +1,17 @@
 import { useAuthStore } from '@/stores/auth-store';
+import { useThemeColors } from '@/theme';
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function Index() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const colors = useThemeColors();
 
   if (isLoading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#000" />
+      <View style={[styles.loader, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -18,7 +20,8 @@ export default function Index() {
     return <Redirect href="/(protected)/home" />;
   }
 
-  return <Redirect href="/(auth)/login" />;
+  // Not authenticated → onboarding (which includes auth on last slide)
+  return <Redirect href="/(auth)/onboarding" />;
 }
 
 const styles = StyleSheet.create({
@@ -26,6 +29,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
 });

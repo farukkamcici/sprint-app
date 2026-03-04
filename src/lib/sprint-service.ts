@@ -5,19 +5,35 @@ type Sprint = Database['public']['Tables']['sprints']['Row'];
 type SprintInsert = Database['public']['Tables']['sprints']['Insert'];
 
 /**
- * Get the currently active sprint for the user.
+ * Get the currently active sprint for the user (most recent).
  */
 export async function getActiveSprint(): Promise<Sprint | null> {
   const { data, error } = await supabase
     .from('sprints')
     .select('*')
     .eq('status', 'active')
-    .order('created_at', { ascending: false })
+    .order('start_date', { ascending: true })
     .limit(1)
     .maybeSingle();
 
   if (error) throw error;
   return data as Sprint | null;
+}
+
+/**
+ * Get all active sprints for the user, ordered by start_date ascending.
+ * Returns up to 3 (the product limit).
+ */
+export async function getActiveSprints(): Promise<Sprint[]> {
+  const { data, error } = await supabase
+    .from('sprints')
+    .select('*')
+    .eq('status', 'active')
+    .order('start_date', { ascending: true })
+    .limit(3);
+
+  if (error) throw error;
+  return (data as Sprint[]) ?? [];
 }
 
 /**
@@ -70,9 +86,9 @@ export async function createSprint(params: {
 
   if (countError) throw countError;
 
-  // FREE tier: max 1 active sprint (PRO enforcement can be added later)
-  if ((count ?? 0) >= 1) {
-    throw new Error('You already have an active sprint. Complete or abandon it first.');
+  // Max 3 active sprints (PRO enforcement can be added later)
+  if ((count ?? 0) >= 3) {
+    throw new Error('You can have up to 3 active sprints at a time. Complete or abandon one first.');
   }
 
   // Check if this is the user's first sprint (must be 7 days)
@@ -157,11 +173,13 @@ export async function finishCalibration(sprintId: string): Promise<Sprint> {
 
 /**
  * Calculate the current day number of a sprint (1-indexed).
+ * Counts from the actual start_date, handling timezone correctly.
  */
 export function getSprintDayNumber(sprint: Sprint): number {
-  const start = new Date(sprint.start_date);
+  // Parse date string as local date (YYYY-MM-DD → local midnight)
+  const [sy, sm, sd] = sprint.start_date.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
   const today = new Date();
-  start.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
   const diffMs = today.getTime() - start.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -183,5 +201,8 @@ export function canModifyRules(sprint: Sprint): boolean {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0]!;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }

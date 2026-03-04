@@ -4,6 +4,7 @@ import {
     createSprint,
     finishCalibration,
     getActiveSprint,
+    getActiveSprints,
     getSprints,
 } from '@/lib/sprint-service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 const SPRINT_KEYS = {
   all: ['sprints'] as const,
   active: ['sprints', 'active'] as const,
+  activeSprints: ['sprints', 'activeSprints'] as const,
   list: ['sprints', 'list'] as const,
 };
 
@@ -18,6 +20,13 @@ export function useActiveSprint() {
   return useQuery({
     queryKey: SPRINT_KEYS.active,
     queryFn: getActiveSprint,
+  });
+}
+
+export function useActiveSprints() {
+  return useQuery({
+    queryKey: SPRINT_KEYS.activeSprints,
+    queryFn: getActiveSprints,
   });
 }
 

@@ -6,7 +6,7 @@ export default function ProtectedLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
 
   if (!isLoading && !isAuthenticated) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(auth)/onboarding" />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;
